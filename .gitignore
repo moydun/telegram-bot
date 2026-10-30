@@ -1,0 +1,8 @@
+.env
+.secrets/
+.venv/
+*.session
+*.session-journal
+__pycache__/
+.pytest_cache/
+Telegram Post Search & Delivery Engineering Plan.md
