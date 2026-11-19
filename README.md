@@ -1,7 +1,7 @@
 # Telegram Channel Search Bot
 
 A bot that finds files in a private Telegram channel by name. A user sends
-`/search vale` and the bot sends back the post with `vale.jpg`.
+`/search "filename"` and the bot sends back the post with `filename.jpg`.
 
 ## How it works
 
@@ -41,12 +41,12 @@ the bot was added are indexed.
 ## Usage
 
 - Upload files to the channel **as File (document)**, not as Photo.
-  Photos lose their file name, so `vale.jpg` would not be found.
+  Photos lose their file name, so `filename.jpg` would not be found.
   (If you must post a photo, put the name in the caption.)
 - In a chat with the bot, send:
 
   ```
-  /search vale
+  /search filename
   ```
 
   Search is partial and case-insensitive, and returns up to 5 matches.
