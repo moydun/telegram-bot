@@ -1,63 +1,53 @@
-# Telegram Channel Search Bot
+# JastClone — Telegram-бот с поиском фильмов
 
-A bot that finds files in a private Telegram channel by name. A user sends
-`/search "filename"` and the bot sends back the post with `filename.jpg`.
+Бот-индекс: ищет тайтл по названию, показывает карточку и отдаёт источники
+с видеобалансеров. Видео не хранит — только ссылки, поэтому трафика не ест.
 
-## How it works
+> Нелегальный сервис в терминах права: файлы лежат на чужих серверах,
+> лицензии ни у балансеров, ни у бота нет. Подробности в разделе «Правовое».
 
-1. The bot is an admin of your channel and receives every new post.
-2. For each post it saves the file name (or caption) and the message ID
-   in a local SQLite database (`posts.db`).
-3. On `/search <name>` it looks the name up and copies the matching
-   post(s) to the user.
+## Что умеет
 
-Telegram bots cannot read channel history, so only posts made **after**
-the bot was added are indexed.
+- Поиск по названию через ПоискКино API (Кинопоиск-метаданные)
+- Карточка: постер, год, рейтинг, описание
+- Источники с Videoseed и Collaps, дедупликация по URL
+- Плеер в Telegram WebApp вместо перехода на сайт
+- Ранжирование источников: рабочие вверх, сдохшие вниз (`ok` / `fails`)
+- Кнопка «Не работает» — источник уходит вниз после трёх жалоб
+- Кэш карточек в SQLite, чтобы не жечь лимит метаданных
 
-## Setup
+## Чего не умеет
 
-1. Create a bot with [@BotFather](https://t.me/BotFather) and copy the token.
-2. Add the bot to your private channel as an **admin**.
-3. Install dependencies:
+- Не хранит файлы и не раздаёт `file_id`
+- Нет выбора сезона и серии (см. «Известные ограничения»)
+- Нет платежей, подписок и админки
 
-   ```bash
-   pip install -r requirements.txt
-   ```
+## Архитектура
 
-4. Open `bot.py` and set:
+    Telegram ──► бот (aiogram) ──► БД карточек и ссылок
+                      │
+                      ├──► ПоискКино API      (название → kp_id, метаданные)
+                      ├──► Videoseed / Collaps (kp_id → iframe_url)
+                      └──► aiohttp /play/{id} (WebApp-обёртка с iframe)
+                                    │
+                                    ▼
+                            чужой CDN, поток мимо бота
 
-   - `TOKEN` - your bot token
-   - `CHANNEL_ID` - your channel ID (starts with `-100`)
+Поток идёт с сервера балансера напрямую в плеер Telegram. Бот участвует
+только в поиске и в отдаче страницы-обёртки.
 
-   To find the channel ID, temporarily add `print(m.chat.id)` to
-   `index_post`, run the bot, and publish any post in the channel.
+## Стек
 
-5. Run the bot:
+- Python 3.11+ (< 3.16), aiogram 3.33.0
+- aiohttp для WebApp-обёртки, aiosqlite для БД, httpx для API
+- SQLite как кэш и реестр здоровья источников
 
-   ```bash
-   python bot.py
-   ```
+## Установка
 
-## Usage
-
-- Upload files to the channel **as File (document)**, not as Photo.
-  Photos lose their file name, so `filename.jpg` would not be found.
-  (If you must post a photo, put the name in the caption.)
-- In a chat with the bot, send:
-
-  ```
-  /search filename
-  ```
-
-  Search is partial and case-insensitive, and returns up to 5 matches.
-
-## Notes
-
-- Keep the bot running while you upload. If it is offline for more than
-  about 24 hours, Telegram drops the missed updates and those files are
-  never indexed.
-- Do not delete `posts.db`. It is the only record of which file is which
-  message.
-- Anyone who finds the bot can search and receive files from the channel.
-- If the channel has "Restrict saving content" enabled, copying will fail.
-  Store `m.document.file_id` instead and send it with `bot.send_document`.
+```bash
+git clone <repo> && cd jastclone
+python -m venv .venv && source .venv/bin/activate
+pip install -r requirements.txt
+mkdir -p data
+cp .env.example .env
+chmod 600 .env
